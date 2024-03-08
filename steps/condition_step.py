@@ -47,6 +47,7 @@ class ConditionStep:
                 name=MlFlowConfig.registered_model_name,
             )
             LOGGER.info("New model registered.")
+            return
 
         latest_registered_model = registered_models[0]
         registered_model_run = mlflow.get_run(
