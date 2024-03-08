@@ -21,7 +21,7 @@ preprocessing_data = PreprocessingData(
 )
 features_engineering_data = FeaturesEngineeringData(
     batch_path=FeatureEngineeringConfig.batch_path,
-    encoders_path=FeatureEngineeringConfig.encoders_path,
+    normalizers_path=FeatureEngineeringConfig.normalizers_path,
 )
 
 # Steps

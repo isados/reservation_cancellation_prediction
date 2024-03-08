@@ -31,7 +31,7 @@ class PreprocessStep:
         """
 
         preprocessed_df = pd.read_parquet(data_path)
-        preprocessed_df = self._preprocess(preprocessed_df)
+        # preprocessed_df = self._preprocess(preprocessed_df)
 
         if not self.inference_mode:
             train_df = preprocessed_df.sample(

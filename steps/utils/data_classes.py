@@ -3,7 +3,8 @@ from pathlib import Path
 from typing import Iterable, Optional
 import joblib
 
-from sklearn.preprocessing import OrdinalEncoder, TargetEncoder
+# from sklearn.preprocessing import OrdinalEncoder, TargetEncoder
+from sklearn.preprocessing import Normalizer
 
 
 @dataclass
@@ -24,21 +25,22 @@ class FeaturesEngineeringData:
     Regarding if it's the training or inference pipeline, the correct paths need to be implemented
     (respectively train_path, test_path / batch_path)"""
 
-    encoders_path: Path
+    normalizers_path: Path
     train_path: Optional[Path] = None
     test_path: Optional[Path] = None
     batch_path: Optional[Path] = None
 
 
 @dataclass
-class FeaturesEncoder:
-    """Encoders artifact dumped and loaded during the feature_engineering step."""
+class FeaturesNormalizer:
+    """Normalizer artifact dumped and loaded during the feature_engineering step."""
 
-    ordinal_encoder: OrdinalEncoder
-    target_encoder: TargetEncoder
+    # ordinal_encoder: OrdinalEncoder
+    # target_encoder: TargetEncoder
+    normalizer: Normalizer
     base_features: Iterable[str]
-    ordinal_features: Iterable[str]
-    target_features: Iterable[str]
+    #ordinal_features: Iterable[str]
+    #target_features: Iterable[str]
     target: str
 
     def to_joblib(self, path: Path) -> None:

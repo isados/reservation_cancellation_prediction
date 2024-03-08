@@ -26,7 +26,7 @@ preprocessing_data = PreprocessingData(
 feature_engineering_data = FeaturesEngineeringData(
     train_path=FeatureEngineeringConfig.train_path,
     test_path=FeatureEngineeringConfig.test_path,
-    encoders_path=FeatureEngineeringConfig.encoders_path,
+    normalizers_path=FeatureEngineeringConfig.normalizers_path,
 )
 target = FeatureEngineeringConfig.target
 
@@ -40,7 +40,8 @@ feature_engineering_step = FeatureEngineeringStep(
     feature_engineering_data=feature_engineering_data
 )
 train_step = TrainStep(
-    params=TrainerConfig.params
+    params=TrainerConfig.params,
+    metric_params=TrainerConfig.metric_params,
 )
 condition_step = ConditionStep(
     criteria=ConditionConfig.criteria, 

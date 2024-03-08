@@ -3,10 +3,11 @@ from typing import Tuple, Optional
 import joblib
 from pathlib import Path
 
-from sklearn.preprocessing import TargetEncoder, OrdinalEncoder
+# from sklearn.preprocessing import TargetEncoder, OrdinalEncoder
+from sklearn.preprocessing import Normalizer
 import pandas as pd
 
-from steps.utils.data_classes import FeaturesEncoder, FeaturesEngineeringData
+from steps.utils.data_classes import FeaturesNormalizer, FeaturesEngineeringData
 from steps.config import FeatureEngineeringConfig
 
 
@@ -75,25 +76,24 @@ class FeatureEngineeringStep:
             output_path (Path): Data path after encoding.
         """
         LOGGER.info("Start features engineering 'fit_transform'.")
-        feature_encoders = self._init_features_encoder()
-        base_df, ordinal_df, target_df, target_col = self._get_dfs(
+        feature_normalizers = self._init_features_normalizer()
+        base_df, target_col = self._get_dfs(
             df=df, 
-            features_encoder=feature_encoders
+            features_normalizer=feature_normalizers
         )
 
-        ordinal_encoded_data = feature_encoders.ordinal_encoder.fit_transform(ordinal_df)
-        target_encoded_data = feature_encoders.target_encoder.fit_transform(target_df, target_col)
+        normalized_data = feature_normalizers.normalizer.fit_transform(base_df)
 
-        base_df[feature_encoders.ordinal_features] = ordinal_encoded_data
-        base_df[feature_encoders.target_features] = target_encoded_data
+
+        base_df[feature_normalizers.base_features] = normalized_data
 
         # Don't forget to add the target
-        base_df[feature_encoders.target] = target_col
+        base_df[feature_normalizers.target] = target_col
 
         base_df.to_parquet(path=output_path)
-        feature_encoders.to_joblib(path=self.feature_engineering_data.encoders_path)
+        feature_normalizers.to_joblib(path=self.feature_engineering_data.normalizers_path)
         LOGGER.info(
-            f"Features and encoders successfully saved respectively to {str(output_path)} and {str(self.feature_engineering_data.encoders_path)}"
+            f"Features and normalizers successfully saved respectively to {str(output_path)} and {str(self.feature_engineering_data.normalizers_path)}"
         )
 
     def transform(
@@ -108,65 +108,54 @@ class FeatureEngineeringStep:
             output_path (Path): Transformed data path.
         """
         LOGGER.info("Start features engineering 'transform'.")
-        features_encoder = self._load_features_encoder()
-        base_df, ordinal_df, target_df, target_col = self._get_dfs(
-            df, features_encoder=features_encoder
+        features_normalizer = self._load_features_normalizer()
+        base_df, target_col = self._get_dfs(
+            df, features_normalizer=features_normalizer
         )
 
-        ordinal_encoded_data = features_encoder.ordinal_encoder.transform(ordinal_df)
-        target_encoded_data = features_encoder.target_encoder.transform(target_df)
+        normalized_data = features_normalizer.normalizer.transform(base_df)
 
-        base_df[features_encoder.ordinal_features] = ordinal_encoded_data
-        base_df[features_encoder.target_features] = target_encoded_data
+        base_df[features_normalizer.base_features] = normalized_data
 
         if target_col is not None:
             # Inference
-            base_df[features_encoder.target] = target_col
+            base_df[features_normalizer.target] = target_col
 
         base_df.to_parquet(path=output_path)
         LOGGER.info(f"Features successfully saved to {str(output_path)}")
 
-    def _init_features_encoder(self) -> FeaturesEncoder:
+    def _init_features_normalizer(self) -> FeaturesNormalizer:
         """Init encoders for fit_transform()
 
         Return:
             feature_encoders (FeatureEncoders): Encoders artifact
         """
-        ordinal_encoder = OrdinalEncoder(
-            handle_unknown="use_encoded_value", 
-            unknown_value=-1
-        )
-        target_encoder = TargetEncoder()
-        return FeaturesEncoder(
-            ordinal_encoder=ordinal_encoder,
-            target_encoder=target_encoder,
-            ordinal_features=FeatureEngineeringConfig.ordinal_features,
-            target_features=FeatureEngineeringConfig.target_features,
+        normalizer = Normalizer()
+        return FeaturesNormalizer(
+            normalizer=normalizer,
             base_features=FeatureEngineeringConfig.base_features,
             target=FeatureEngineeringConfig.target,
         )
 
-    def _load_features_encoder(self) -> FeaturesEncoder:
+    def _load_features_normalizer(self) -> FeaturesNormalizer:
         """Load encoders artifact
 
         Returns:
             FeaturesEncoder: Encoders artifact
         """
-        features_encoder = joblib.load(self.feature_engineering_data.encoders_path)
-        return features_encoder
+        features_normalizer = joblib.load(self.feature_engineering_data.normalizers_path)
+        return features_normalizer
 
     def _get_dfs(
         self, 
         df: pd.DataFrame, 
-        features_encoder: FeaturesEncoder
-    ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, Optional[pd.Series]]:
+        features_normalizer: FeaturesNormalizer
+    ) -> Tuple[pd.DataFrame, Optional[pd.Series]]:
         """Extract the relevant columns based on features for respectively: 
         no transformation - ordinal categories - target categories"""
-        base_df = df[features_encoder.base_features]
-        ordinal_df = df[features_encoder.ordinal_features]
-        target_df = df[features_encoder.target_features]
+        base_df = df[features_normalizer.base_features]
         if not self.inference_mode:
-            target_col = df[features_encoder.target]
-            return base_df, ordinal_df, target_df, target_col
+            target_col = df[features_normalizer.target]
+            return base_df, target_col
         elif self.inference_mode:
-            return base_df, ordinal_df, target_df, None
+            return base_df, None

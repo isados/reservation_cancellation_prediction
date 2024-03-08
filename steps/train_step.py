@@ -23,9 +23,11 @@ class TrainStep:
     def __init__(
             self,
             params: Dict[str, Any],
+            metric_params: Dict[str, Any],
             model_name: str = TrainerConfig.model_name
     ) -> None:
         self.params = params
+        self.metric_params = metric_params
         self.model_name = model_name
 
     def __call__(
@@ -57,11 +59,12 @@ class TrainStep:
             # Evaluate
             y_test = test_df[target]
             y_pred = model.predict(test_df.drop(target, axis=1))
+            y_pred_proba = model.predict_proba(test_df.drop(target, axis=1))
 
             # Metrics
-            precision = precision_score(y_test, y_pred)
-            recall = recall_score(y_test, y_pred)
-            roc_auc = roc_auc_score(y_test, y_pred)
+            precision = precision_score(y_test, y_pred, **self.metric_params)
+            recall = recall_score(y_test, y_pred, **self.metric_params )
+            roc_auc = roc_auc_score(y_test, y_pred_proba, **self.metric_params, multi_class='ovr')
             print(classification_report(y_test, y_pred))
 
             metrics = {
